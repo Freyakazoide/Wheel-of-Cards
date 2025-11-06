@@ -11,8 +11,56 @@ export const AJAH_COLORS: Record<Ajah, string> = {
   [Ajah.Negra]: 'bg-black text-white',
 };
 
-// FIX: Define base decks first to avoid self-reference in object initialization.
-const baseDecks = {
+export const AJAH_DECKS: Record<Ajah, Card[]> = {
+    [Ajah.Azul]: [
+        { value: 5, ajah: Ajah.Azul }, { value: 5, ajah: Ajah.Azul },
+        { value: 4, ajah: Ajah.Azul }, { value: 4, ajah: Ajah.Azul },
+        { value: 3, ajah: Ajah.Azul }, { value: 3, ajah: Ajah.Azul },
+        { value: 2, ajah: Ajah.Azul }, { value: 2, ajah: Ajah.Azul },
+        { value: 6, ajah: Ajah.Azul },
+    ],
+    [Ajah.Amarela]: [
+        { value: 2, ajah: Ajah.Amarela }, { value: 2, ajah: Ajah.Amarela },
+        { value: 1, ajah: Ajah.Amarela }, { value: 1, ajah: Ajah.Amarela },
+        { value: 0, ajah: Ajah.Amarela }, { value: 0, ajah: Ajah.Amarela },
+        { value: 3, ajah: Ajah.Amarela }, { value: 3, ajah: Ajah.Amarela },
+        { value: 4, ajah: Ajah.Amarela },
+    ],
+    [Ajah.Vermelha]: [
+        { value: 9, ajah: Ajah.Vermelha }, { value: 9, ajah: Ajah.Vermelha },
+        { value: 8, ajah: Ajah.Vermelha }, { value: 8, ajah: Ajah.Vermelha },
+        { value: 7, ajah: Ajah.Vermelha }, { value: 7, ajah: Ajah.Vermelha },
+        { value: 6, ajah: Ajah.Vermelha }, { value: 6, ajah: Ajah.Vermelha },
+        { value: 5, ajah: Ajah.Vermelha },
+    ],
+    [Ajah.Verde]: [
+        { value: 5, ajah: Ajah.Verde }, { value: 5, ajah: Ajah.Verde },
+        { value: 6, ajah: Ajah.Verde }, { value: 6, ajah: Ajah.Verde },
+        { value: 4, ajah: Ajah.Verde }, { value: 4, ajah: Ajah.Verde },
+        { value: 7, ajah: Ajah.Verde }, { value: 7, ajah: Ajah.Verde },
+        { value: 8, ajah: Ajah.Verde },
+    ],
+    [Ajah.Cinzenta]: [
+        { value: 4, ajah: Ajah.Cinzenta }, { value: 4, ajah: Ajah.Cinzenta },
+        { value: 5, ajah: Ajah.Cinzenta }, { value: 5, ajah: Ajah.Cinzenta },
+        { value: 3, ajah: Ajah.Cinzenta }, { value: 3, ajah: Ajah.Cinzenta },
+        { value: 6, ajah: Ajah.Cinzenta }, { value: 6, ajah: Ajah.Cinzenta },
+        { value: 2, ajah: Ajah.Cinzenta },
+    ],
+    [Ajah.Negra]: [
+        { value: 7, ajah: Ajah.Negra }, { value: 7, ajah: Ajah.Negra },
+        { value: 6, ajah: Ajah.Negra }, { value: 6, ajah: Ajah.Negra },
+        { value: 8, ajah: Ajah.Negra }, { value: 8, ajah: Ajah.Negra },
+        { value: 5, ajah: Ajah.Negra }, { value: 5, ajah: Ajah.Negra },
+        { value: 9, ajah: Ajah.Negra },
+    ],
+    [Ajah.Marrom]: [
+        { value: 5, ajah: Ajah.Marrom }, { value: 5, ajah: Ajah.Marrom },
+        { value: 4, ajah: Ajah.Marrom }, { value: 4, ajah: Ajah.Marrom },
+        { value: 6, ajah: Ajah.Marrom }, { value: 6, ajah: Ajah.Marrom },
+        { value: 7, ajah: Ajah.Marrom }, { value: 7, ajah: Ajah.Marrom },
+        { value: 8, ajah: Ajah.Marrom },
+    ],
     [Ajah.Branca]: [
         { value: 0, ajah: Ajah.Branca }, { value: 0, ajah: Ajah.Branca },
         { value: 2, ajah: Ajah.Branca }, { value: 2, ajah: Ajah.Branca },
@@ -20,31 +68,8 @@ const baseDecks = {
         { value: 6, ajah: Ajah.Branca }, { value: 6, ajah: Ajah.Branca },
         { value: 8, ajah: Ajah.Branca },
     ],
-    [Ajah.Verde]: [
-        { value: 1, ajah: Ajah.Verde }, { value: 1, ajah: Ajah.Verde },
-        { value: 3, ajah: Ajah.Verde }, { value: 3, ajah: Ajah.Verde },
-        { value: 5, ajah: Ajah.Verde }, { value: 5, ajah: Ajah.Verde },
-        { value: 7, ajah: Ajah.Verde }, { value: 7, ajah: Ajah.Verde },
-        { value: 9, ajah: Ajah.Verde },
-    ],
-    [Ajah.Azul]: [
-        { value: 0, ajah: Ajah.Azul }, { value: 1, ajah: Ajah.Azul },
-        { value: 2, ajah: Ajah.Azul }, { value: 3, ajah: Ajah.Azul },
-        { value: 4, ajah: Ajah.Azul }, { value: 5, ajah: Ajah.Azul },
-        { value: 6, ajah: Ajah.Azul }, { value: 7, ajah: Ajah.Azul },
-        { value: 8, ajah: Ajah.Azul },
-    ],
 };
 
-export const AJAH_DECKS: Record<Ajah, Card[]> = {
-    ...baseDecks,
-    // Simplified decks for other Ajahs for brevity
-    [Ajah.Amarela]: [...baseDecks[Ajah.Verde].map(c => ({...c, ajah: Ajah.Amarela}))],
-    [Ajah.Marrom]: [...baseDecks[Ajah.Azul].map(c => ({...c, ajah: Ajah.Marrom}))],
-    [Ajah.Cinzenta]: [...baseDecks[Ajah.Branca].map(c => ({...c, ajah: Ajah.Cinzenta}))],
-    [Ajah.Vermelha]: [...baseDecks[Ajah.Verde].map(c => ({...c, ajah: Ajah.Vermelha}))],
-    [Ajah.Negra]: [...baseDecks[Ajah.Azul].map(c => ({...c, ajah: Ajah.Negra}))],
-};
 
 export const MADNESS_DECK_TEMPLATE: MadnessCard[] = [
     { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }, { value: 6 }, { value: 7 },
@@ -55,7 +80,6 @@ export const MENTAL_STATE_DECK_TEMPLATE: MentalStateCard[] = [
     {
       id: "Hesitacao", level: 1,
       textoEfeito: "Nesta rodada, a primeira jogadora a ficar em 'Stand' deve descartar uma carta aleatória da mão.",
-      // FIX: Added missing 'textoAprimoramento' property.
       idLogicaEfeito: "EFEITO_HESITACAO", textoAprimoramento: "", idLogicaAprimoramento: "APRIM_NENHUM",
       idLogicaCondicao: "COND_NENHUMA", idLogicaDano: "DANO_NENHUM"
     },
@@ -73,19 +97,31 @@ export const MENTAL_STATE_DECK_TEMPLATE: MentalStateCard[] = [
       idLogicaAprimoramento: "APRIM_CHAMA_MENOS_1", idLogicaCondicao: "COND_CHAMA_LVL_3_MAIS",
       idLogicaDano: "DANO_PRIMEIRO_JOGADOR"
     },
+     {
+      id: "ParanoiaSeletiva", level: 2,
+      textoEfeito: "A loucura de Rand foca em quem mais o ameaçou.",
+      idLogicaEfeito: "EFEITO_NENHUM", textoAprimoramento: "",
+      idLogicaAprimoramento: "APRIM_NENHUM", idLogicaCondicao: "COND_NENHUMA",
+      idLogicaDano: "DANO_MAIOR_PONTUACAO"
+    },
+    {
+      id: "DesesperoSufocante", level: 3,
+      textoEfeito: "Rand ataca a Aes Sedai mais enfraquecida.",
+      idLogicaEfeito: "EFEITO_NENHUM", textoAprimoramento: "",
+      idLogicaAprimoramento: "APRIM_NENHUM", idLogicaCondicao: "COND_NENHUMA",
+      idLogicaDano: "DANO_MENOR_VIDA"
+    },
     // Add more cards to reach 100... for now, we'll repeat these to have a working deck
-    ...Array(30).fill(null).flatMap(() => [
+    ...Array(28).fill(null).flatMap(() => [
         {
             id: "FuriaCega", level: 3,
             textoEfeito: "O dano da Loucura é aumentado em 2 nesta rodada.",
-            // FIX: Added missing 'textoAprimoramento' property.
             idLogicaEfeito: "EFEITO_FURIA", textoAprimoramento: "", idLogicaAprimoramento: "APRIM_NENHUM",
             idLogicaCondicao: "COND_NENHUMA", idLogicaDano: "DANO_TODOS_MAIS_1"
         },
         {
             id: "CalmaEnganosa", level: 1,
             textoEfeito: "Se nenhum jogador estourar a pontuação, Rand recupera 5 de Sanidade.",
-            // FIX: Corrected duplicate property 'idLogicaAprimoramento'.
             idLogicaEfeito: "EFEITO_CALMA", textoAprimoramento: "Permanente: O limite de 'estouro' agora é 10 ao invés de 9.",
             idLogicaAprimoramento: "APRIM_LIMITE_ESTOURO_10", idLogicaCondicao: "COND_NENHUM_ESTOURO",
             idLogicaDano: "DANO_NENHUM"

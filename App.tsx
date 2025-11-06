@@ -1,17 +1,18 @@
+
 import React, { useReducer, useState } from 'react';
 import { Ajah, GamePhase, GlobalGameState } from './types';
 import { gameReducer, getInitialState } from './services/gameEngine';
 import PlayerArea from './components/PlayerArea';
-import { AJAH_COLORS } from './constants/decks';
 
 const SetupScreen: React.FC<{ onStartGame: (ajahs: Ajah[]) => void }> = ({ onStartGame }) => {
     const [numPlayers, setNumPlayers] = useState(2);
-    const [selectedAjahs, setSelectedAjahs] = useState<Ajah[]>(Array(2).fill(Ajah.Azul));
+    const [selectedAjahs, setSelectedAjahs] = useState<Ajah[]>(Object.values(Ajah).slice(0, 2));
 
     const handlePlayerCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const count = parseInt(e.target.value, 10);
+        const newAjahs = Object.values(Ajah).slice(0, count);
         setNumPlayers(count);
-        setSelectedAjahs(Array(count).fill(Ajah.Azul));
+        setSelectedAjahs(newAjahs);
     };
 
     const handleAjahChange = (index: number, ajah: Ajah) => {
@@ -21,8 +22,15 @@ const SetupScreen: React.FC<{ onStartGame: (ajahs: Ajah[]) => void }> = ({ onSta
     };
 
     const handleStart = () => {
+        const ajahSet = new Set(selectedAjahs);
+        if (ajahSet.size !== selectedAjahs.length) {
+            alert("Duas Ajahs iguais não podem ser jogadas! Por favor, escolha Ajahs diferentes.");
+            return;
+        }
         onStartGame(selectedAjahs);
     };
+    
+    const isDuplicate = new Set(selectedAjahs).size !== selectedAjahs.length;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
@@ -41,7 +49,7 @@ const SetupScreen: React.FC<{ onStartGame: (ajahs: Ajah[]) => void }> = ({ onSta
 
                 {Array.from({ length: numPlayers }).map((_, index) => (
                     <div key={index} className="mb-4">
-                        <label className="block text-sm font-bold mb-2">Jogadora {index + 1}:</label>
+                        <label className="block text-sm font-bold mb-2">JOGADOR {index + 1}:</label>
                         <select value={selectedAjahs[index]} onChange={(e) => handleAjahChange(index, e.target.value as Ajah)} className="w-full bg-gray-700 p-2 rounded">
                             {Object.values(Ajah).map(ajah => (
                                 <option key={ajah} value={ajah}>{ajah}</option>
@@ -49,8 +57,10 @@ const SetupScreen: React.FC<{ onStartGame: (ajahs: Ajah[]) => void }> = ({ onSta
                         </select>
                     </div>
                 ))}
+                
+                {isDuplicate && <p className="text-red-500 text-center font-bold mb-4 animate-pulse">Ajahs não podem ser repetidas!</p>}
 
-                <button onClick={handleStart} className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-lg text-lg transition-colors">
+                <button onClick={handleStart} disabled={isDuplicate} className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-lg text-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
                     Iniciar Jogo
                 </button>
             </div>
@@ -110,9 +120,30 @@ const SaidarPhaseManager: React.FC<{ gameState: GlobalGameState, dispatch: React
     );
 };
 
+const LogModal: React.FC<{ log: string[]; onClose: () => void }> = ({ log, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold">Log do Jogo</h3>
+          <button onClick={onClose} className="px-3 py-1 bg-red-600 rounded hover:bg-red-500 font-bold text-lg">&times;</button>
+        </div>
+        <div className="overflow-y-auto pr-2 flex flex-col-reverse">
+          <ul className="space-y-1 text-sm text-gray-400">
+            {log.map((entry, index) => (
+              <li key={index} className="border-b border-gray-700/50 pb-1">{entry}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const GameBoard: React.FC<{ gameState: GlobalGameState, dispatch: React.Dispatch<any> }> = ({ gameState, dispatch }) => {
-    const { players, currentPlayerIndex, gamePhase, randSanity, saidarTracks, activeMentalState, activeMadnessCard, log, activeRoundEffects } = gameState;
+    const { players, currentPlayerIndex, gamePhase, randSanity, saidarTracks, activeMentalState, activeMadnessCard, log, activeRoundEffects, topMadnessCardPreview, permanentEnhancements } = gameState;
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
     const handleRevealCards = (playerIndex: number) => (cardIndices: number[]) => {
         dispatch({ type: 'REVEAL_CARDS', playerIndex, cardIndices });
@@ -126,35 +157,92 @@ const GameBoard: React.FC<{ gameState: GlobalGameState, dispatch: React.Dispatch
     const handleEndTurn = () => {
         dispatch({ type: 'END_AJAH_TURN' });
     };
-    
+
+    const handleDeclineReaction = () => {
+        dispatch({ type: 'DECLINE_REACTION' });
+    }
+
+    const handleUseAbility = (playerIndex: number) => (abilityId: string, options: any) => {
+        dispatch({ type: 'USE_ABILITY', payload: { playerIndex, abilityId, options } });
+    }
+
+    const playerCount = players.length;
+    const playerGridCols = playerCount === 4 ? 'xl:grid-cols-4' : (playerCount === 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-2');
+
     return (
-        <div className="p-4 lg:p-8 space-y-6">
+        <div className="p-4 lg:p-6 min-h-screen">
             {gamePhase === GamePhase.SaidarTracks && <SaidarPhaseManager gameState={gameState} dispatch={dispatch} />}
-            {/* Top Bar */}
-            <header className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg flex flex-col md:flex-row justify-between items-center sticky top-4 z-10 border border-gray-700">
-                <div>
+            {isLogModalOpen && <LogModal log={log} onClose={() => setIsLogModalOpen(false)} />}
+            
+            <header className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg flex flex-col md:flex-row justify-between items-center sticky top-4 z-10 border border-gray-700 mb-6">
+                <div className="flex-1">
                     <h1 className="text-2xl font-bold text-red-500">A Loucura de Rand Al'Thor</h1>
                     <p className="text-cyan-300 font-semibold">{gamePhase}</p>
                 </div>
-                <div className="text-center">
-                    <h2 className="text-lg">Sanidade de Rand</h2>
-                    <p className="text-5xl font-bold text-red-400">{randSanity}</p>
+                <div className="flex-1 flex justify-center items-center gap-8">
+                    <div className="text-center">
+                        <h2 className="text-lg">Sanidade de Rand</h2>
+                        <p className="text-5xl font-bold text-red-400">{randSanity}</p>
+                    </div>
+                     <div className="text-center">
+                        <h2 className="text-lg">Rodada</h2>
+                        <p className="text-5xl font-bold">{gameState.currentRound}</p>
+                    </div>
                 </div>
-                 <div className="text-center">
-                    <h2 className="text-lg">Rodada</h2>
-                    <p className="text-5xl font-bold">{gameState.currentRound}</p>
-                </div>
-                <div className="flex space-x-4 text-center">
-                    <div><h3 className="text-sm">Chama</h3><p className="text-2xl font-bold">{saidarTracks.chama}</p></div>
-                    <div><h3 className="text-sm">Escudo</h3><p className="text-2xl font-bold">{saidarTracks.escudo}</p></div>
-                    <div><h3 className="text-sm">Cálice</h3><p className="text-2xl font-bold">{saidarTracks.calice}</p></div>
-                    <div><h3 className="text-sm">Teia</h3><p className="text-2xl font-bold">{saidarTracks.teia}</p></div>
+                <div className="flex-1 flex items-center justify-end gap-x-4">
+                     <div className="flex space-x-4 text-center">
+                        <div><h3 className="text-sm">Chama</h3><p className="text-2xl font-bold">{saidarTracks.chama}</p></div>
+                        <div><h3 className="text-sm">Escudo</h3><p className="text-2xl font-bold">{saidarTracks.escudo}</p></div>
+                        <div><h3 className="text-sm">Cálice</h3><p className="text-2xl font-bold">{saidarTracks.calice}</p></div>
+                        <div><h3 className="text-sm">Teia</h3><p className="text-2xl font-bold">{saidarTracks.teia}</p></div>
+                    </div>
+                     <button onClick={() => setIsLogModalOpen(true)} className="ml-4 px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm font-bold">Ver Log</button>
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+            <main>
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-xl font-bold mb-2 text-purple-400">Estado Mental Ativo</h3>
+                        {activeMentalState ? (
+                            <div>
+                                <h4 className="font-bold text-lg">{activeMentalState.id} (Nível {activeMentalState.level})</h4>
+                                <p className="text-gray-300 mt-1 text-sm">{activeMentalState.textoEfeito}</p>
+                                {activeMentalState.textoAprimoramento && <p className="text-xs text-yellow-300 mt-2">Aprimoramento: {activeMentalState.textoAprimoramento}</p>}
+                            </div>
+                        ) : <p>Nenhum</p>}
+                    </div>
+                     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex space-x-4 items-start justify-center">
+                        <div>
+                            <h3 className="text-xl font-bold mb-2 text-red-400">Loucura Ativa</h3>
+                            {activeMadnessCard ? (
+                                <div className="w-24 h-36 rounded-lg flex flex-col justify-center items-center p-2 shadow-lg bg-black ring-1 ring-red-500">
+                                    <div className="text-4xl font-bold text-red-500">{activeMadnessCard.value}</div>
+                                    <div className="text-xs mt-2 uppercase">LOUCURA</div>
+                                </div>
+                            ) : <p>Nenhuma</p>}
+                        </div>
+                        {topMadnessCardPreview && (
+                            <div className="flex-1 max-w-[10rem]">
+                                <h3 className="text-xl font-bold mb-2 text-blue-400">Próxima Loucura</h3>
+                                <div className="w-24 h-36 rounded-lg flex flex-col justify-center items-center p-2 shadow-lg bg-gray-900 ring-1 ring-blue-500 opacity-70">
+                                    <div className="text-4xl font-bold text-blue-400">{topMadnessCardPreview.value}</div>
+                                    <div className="text-xs mt-2 uppercase">REVELADA</div>
+                                </div>
+                             </div>
+                        )}
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-xl font-bold mb-2 text-yellow-400">Aprimoramentos Permanentes</h3>
+                        {permanentEnhancements.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-1 text-yellow-200 text-sm">
+                                {permanentEnhancements.map((enh, i) => <li key={i}>{enh}</li>)}
+                            </ul>
+                        ) : <p className="text-gray-400">Nenhum</p>}
+                    </div>
+                </section>
+
+                <section className={`grid grid-cols-1 md:grid-cols-2 ${playerGridCols} gap-6`}>
                     {players.map((player, index) => (
                         <PlayerArea
                             key={player.playerId}
@@ -164,41 +252,14 @@ const GameBoard: React.FC<{ gameState: GlobalGameState, dispatch: React.Dispatch
                             onRevealCards={handleRevealCards(index)}
                             onStand={handleStand(index)}
                             onEndTurn={handleEndTurn}
+                            onDeclineReaction={handleDeclineReaction}
+                            onUseAbility={handleUseAbility(index)}
                             activeRoundEffects={activeRoundEffects}
+                            permanentEnhancements={permanentEnhancements}
+                            playerCount={players.length}
                         />
                     ))}
-                </div>
-                
-                <aside className="space-y-6">
-                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                        <h3 className="text-xl font-bold mb-2 text-purple-400">Estado Mental Ativo</h3>
-                        {activeMentalState ? (
-                            <div>
-                                <h4 className="font-bold text-lg">{activeMentalState.id} (Nível {activeMentalState.level})</h4>
-                                <p className="text-gray-300">{activeMentalState.textoEfeito}</p>
-                            </div>
-                        ) : <p>Nenhum</p>}
-                    </div>
-                     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                        <h3 className="text-xl font-bold mb-2 text-red-400">Loucura Ativa</h3>
-                        {activeMadnessCard ? (
-                             <div className="w-24 h-36 rounded-lg flex flex-col justify-center items-center p-2 shadow-lg bg-black ring-1 ring-red-500">
-                                <div className="text-4xl font-bold text-red-500">{activeMadnessCard.value}</div>
-                                <div className="text-xs mt-2 uppercase">LOUCURA</div>
-                            </div>
-                        ) : <p>Nenhuma</p>}
-                    </div>
-                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 h-96">
-                        <h3 className="text-xl font-bold mb-2">Log do Jogo</h3>
-                        <div className="h-full overflow-y-auto pr-2 flex flex-col-reverse">
-                            <ul className="space-y-1 text-sm text-gray-400">
-                                {log.map((entry, index) => (
-                                    <li key={index} className="border-b border-gray-700/50 pb-1">{entry}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </aside>
+                </section>
             </main>
         </div>
     );
